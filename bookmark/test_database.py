@@ -2,19 +2,25 @@
 # that said, the database module could certain be refactored to achieve decoupling
 # in fact, either the implementation of the Unit of Work or just changing to sqlalchemy would be good.
 
-import os
+import os, sys
 from datetime import datetime
 import sqlite3
 
 import pytest
 
 
+# pytest test_database.py DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC)."date_added": datetime.utcnow().isoformat()
+
 from database import DatabaseManager
 
-@pytest.fixture
+@pytest.fixture    
 def database_manager() -> DatabaseManager:
     """
     What is a fixture? https://docs.pytest.org/en/stable/fixture.html#what-fixtures-are
+    arrange phase to prep testing setup
+
+    https://realpython.com/pytest-python-testing/#:~:text=pytest%20fixtures%20are%20a%20way,that%20fixture%20as%20an%20argument
+    pull the repeated data into a single function decorated with @pytest.fixture
     """
     filename = "test_bookmarks.db"
     dbm = DatabaseManager(filename)
@@ -33,17 +39,21 @@ def test_database_manager_create_table(database_manager):
             "title": "text not null",
             "url": "text not null",
             "notes": "text",
-            "date_added": "text not null",
+            # "date_added": "text not null"
+            #can't figure out how to deal with deprecation tbd
+            # https://docs.python.org/3/library/sqlite3.html#sqlite3-adapter-converter-recipes
         },
     )
 
     #assert
     conn = database_manager.connection
-    cursor = conn.cursor()
+    cursor = conn.cursor()  #use to interact with db
 
     cursor.execute(''' SELECT count(name) FROM sqlite_master WHERE type='table' AND name='bookmarks' ''')
+    #? why is formatted with ''' ?
 
     assert cursor.fetchone()[0] == 1
+    #get first value...?
 
     #cleanup
     # this is probably not really needed
@@ -60,7 +70,7 @@ def test_database_manager_add_bookmark(database_manager):
             "title": "text not null",
             "url": "text not null",
             "notes": "text",
-            "date_added": "text not null",
+            # "date_added": "text not null",  deprecated issue tbd
         },
     )
 
@@ -68,9 +78,12 @@ def test_database_manager_add_bookmark(database_manager):
         "title": "test_title",
         "url": "http://example.com",
         "notes": "test notes",
-        "date_added": datetime.utcnow().isoformat()        
+        # "date_added": datetime.now() tbd 
     }
 
+        #datetime.utcnow().isoformat()  
+    #https://blog.miguelgrinberg.com/post/it-s-time-for-a-change-datetime-utcnow-is-now-deprecated
+          
     # act
     database_manager.add("bookmarks", data)
 
@@ -79,3 +92,91 @@ def test_database_manager_add_bookmark(database_manager):
     cursor = conn.cursor()
     cursor.execute(''' SELECT * FROM bookmarks WHERE title='test_title' ''')    
     assert cursor.fetchone()[0] == 1    
+
+
+def test_database_manager_delete(database_manager):
+
+    # arrange  -  create a table and add data to be deleted...?
+    database_manager.create_table(
+        "bookmarks",
+        {
+            "id": "integer primary key autoincrement",
+            "title": "text not null",
+            "url": "text not null",
+            "notes": "text"
+        },
+    )
+
+    data = {
+        "title": "test_title",
+        "url": "http://example.com",
+        "notes": "test notes"
+    }
+          
+    database_manager.add("bookmarks", data)
+
+    criteria = {
+        "notes": "test notes"
+    }
+
+    # act
+
+    database_manager.delete("bookmarks", criteria)
+
+    # assert
+    conn = database_manager.connection
+    cursor = conn.cursor()
+    cursor.execute(''' SELECT * FROM bookmarks WHERE title='test_title' ''')    
+    
+    assert cursor.fetchone() is None
+
+
+    # reminder to read: https://docs.python.org/3/library/sqlite3.html
+
+
+
+def test_database_manager_select(database_manager):
+
+    # arrange  -  create a table and add data to be selected...?
+    database_manager.create_table(
+        "bookmarks",
+        {
+            "id": "integer primary key autoincrement",
+            "title": "text not null",
+            "url": "text not null",
+            "notes": "text"
+        },
+    )
+
+    data = {
+        "title": "test_title",
+        "url": "http://example.com",
+        "notes": "test notes",
+        "title": "test_title_2",
+        "url": "http://example2.com",
+        "notes": "test notes2",
+        "title": "test_title_3",
+        "url": "http://example3.com",
+        "notes": "test notes3",
+    }
+    #how to add multiple rows...of data?
+          
+    database_manager.add("bookmarks", data)
+
+    criteria = {
+        "id": 2,
+    }
+
+    # act
+
+    database_manager.delete("bookmarks", criteria)
+
+    # assert
+    conn = database_manager.connection
+    cursor = conn.cursor()
+    cursor.execute(''' SELECT * FROM bookmarks WHERE title='test_title' ''')    
+    
+    assert cursor.fetchone() is None
+
+
+    # reminder to read: https://docs.python.org/3/library/sqlite3.html

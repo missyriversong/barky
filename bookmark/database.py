@@ -47,6 +47,10 @@ class DatabaseManager:
             cursor.execute(statement, values or [])
             return cursor
 
+#The default datetime adapter is deprecated as of Python 3.12; see the sqlite3 documentation for suggested replacement recipes cursor.execute(statement, values or [])
+        #https://discuss.python.org/t/fixing-sqlite-timestamp-converter-to-handle-utc-offsets/10985
+        # https://stackoverflow.com/questions/27640857/best-way-to-store-python-datetime-time-in-a-sqlite3-column
+        
     def create_table(self, table_name, columns):
         '''
         The method offers a flexible way to pass data definition:

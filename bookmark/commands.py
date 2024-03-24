@@ -2,6 +2,10 @@
 This module utilizes the command pattern - https://en.wikipedia.org/wiki/Command_pattern - to 
 specify and implement the business logic layer
 """
+# eg. use base class to get rid of duplicated code, store common but may cause error if create instance inadvertently...
+#https://www.geeksforgeeks.org/abstract-classes-in-python/ blueprint for other classes,  set of methods that must be created within any child classes, consistency and reusability, inject for testing
+
+
 import sys
 from abc import ABC, abstractmethod
 from datetime import datetime

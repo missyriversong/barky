@@ -65,6 +65,7 @@ def test_database_manager_add_bookmark(database_manager):
     # arrange
     database_manager.create_table(
         "bookmarks",
+     
         {
             "id": "integer primary key autoincrement",
             "title": "text not null",
